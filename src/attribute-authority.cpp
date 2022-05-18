@@ -95,7 +95,7 @@ AttributeAuthority::onDecryptionKeyRequest(const Interest& request)
   // reply interest with encrypted private key
   Data result;
   result.setName(request.getName());
-  result.setFreshnessPeriod(5_s);
+  result.setFreshnessPeriod(100_s);
   result.setContent(encryptDataContentWithCK(prvBuffer, optionalCert->getPublicKey()));
   m_keyChain.sign(result, signingByCertificate(m_cert));
   m_face.put(result);

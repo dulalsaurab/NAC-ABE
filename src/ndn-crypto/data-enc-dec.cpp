@@ -21,6 +21,7 @@
 #include "data-enc-dec.hpp"
 #include "aes.hpp"
 #include "rsa.hpp"
+#include <iostream>
 
 namespace ndn {
 namespace nacabe {
@@ -73,6 +74,8 @@ decryptDataContent(const Block& dataBlock, const security::Tpm& tpm, const Name&
   Buffer encryptedPayload(dataBlock.get(TLV_EncryptedContent).value(),
                           dataBlock.get(TLV_EncryptedContent).value_size());
 
+  // std::cout << "_____" << dataBlock.get(TLV_EncryptedAesKey).value() << std::endl;
+  // std::cout << "_____" << dataBlock.get(TLV_EncryptedContent).value() << std::endl;;
   // auto aesKey = Rsa::cpDecrypt(key, keyLen, encryptedAesKey.data(), encryptedAesKey.size());
   auto aesKey = tpm.decrypt(encryptedAesKey, security::extractKeyNameFromCertName(certName));
   auto payload = Aes::decrypt(*aesKey, encryptedPayload, iv);

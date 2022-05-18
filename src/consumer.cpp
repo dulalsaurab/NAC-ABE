@@ -54,12 +54,13 @@ Consumer::obtainDecryptionKey()
   interestName.append(DECRYPT_KEY);
   interestName.append(identity.wireEncode().begin(), identity.wireEncode().end());
   Interest interest(interestName);
-  // interest.setMustBeFresh(true);
+  interest.setMustBeFresh(true);
   interest.setCanBePrefix(true);
 
   m_face.expressInterest(interest,
     [this] (auto&&, const Data& keyData) {
       NDN_LOG_INFO(m_cert.getIdentity() << " get decrypt key data");
+      // NDN_LOG_INFO("content " <<  keyData.getContent());
       auto prvBlock = decryptDataContent(keyData.getContent(), m_keyChain.getTpm(), m_cert.getName());
       algo::PrivateKey prv;
       prv.fromBuffer(Buffer(prvBlock.data(), prvBlock.size()));
@@ -137,6 +138,7 @@ Consumer::decryptContent(const Data& data,
   auto encryptedContentTLV = encryptedContent.get(TLV_EncryptedContent);
 
   NDN_LOG_INFO("encrypted Content size is " << encryptedContentTLV.value_size());
+  NDN_LOG_INFO("encrypted content tlv " << encryptedContentTLV);
   auto cipherText = std::make_shared<algo::CipherText>();
   cipherText->m_content = Buffer(encryptedContentTLV.value(), encryptedContentTLV.value_size());
   cipherText->m_plainTextSize = readNonNegativeInteger(encryptedContent.get(TLV_PlainTextSize));
@@ -187,7 +189,12 @@ Consumer::onCkeyData(const Data& data, std::shared_ptr<algo::CipherText> cipherT
     if (m_paramFetcher.getAbeType() == ABE_TYPE_CP_ABE)
       result = algo::ABESupport::getInstance().cpDecrypt(m_paramFetcher.getPublicParams(), m_keyCache, *cipherText);
     else if (m_paramFetcher.getAbeType() == ABE_TYPE_KP_ABE)
-      result = algo::ABESupport::getInstance().kpDecrypt(m_paramFetcher.getPublicParams(), m_keyCache, *cipherText);
+     {
+      //  NDN_LOG_INFO("m_paramFetcher.getPublicParams() :" << m_paramFetcher.getPublicParams().m_pub);
+      //  NDN_LOG_INFO("cipherText->m_content.size() :" << cipherText->m_content.data());
+      //  NDN_LOG_INFO("m_keyCache :" << m_keyCache.m_prv);
+       result = algo::ABESupport::getInstance().kpDecrypt(m_paramFetcher.getPublicParams(), m_keyCache, *cipherText);
+     }
     else
       errorCallback("Unsupported ABE type");
   }
@@ -195,7 +202,8 @@ Consumer::onCkeyData(const Data& data, std::shared_ptr<algo::CipherText> cipherT
     errorCallback(e.what());
     return;
   }
-  NDN_LOG_INFO("result length : " << result.size());
+  NDN_LOG_INFO("got data back for data name: " << data.getName());
+  NDN_LOG_INFO("data/result size : " << result.size());
   successCallBack(result);
 }
 
